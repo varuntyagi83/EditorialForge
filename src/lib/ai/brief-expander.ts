@@ -1,7 +1,8 @@
 import OpenAI from "openai";
 import type { Brief, CulturalContext, ReferenceImage } from "@prisma/client";
-import { VERSION, PROMPT } from "./prompts/brief-expander.system";
-import { FEW_SHOT_EXAMPLES } from "./prompts/brief-expander.examples";
+import { VERSION, PROMPT } from "./prompts/brief-expander.system.js";
+import { FEW_SHOT_EXAMPLES } from "./prompts/brief-expander.examples.js";
+import { validateAndCorrect } from "./brief-expander-validator.js";
 import crypto from "crypto";
 
 export type ExpandedPrompt = {
@@ -21,14 +22,95 @@ export async function expandBrief(params: {
 }): Promise<ExpandedPrompt> {
   const { brief, culturalContext, referenceImages, variationIndex } = params;
 
-  const userMessage = buildUserMessage(brief, culturalContext, variationIndex);
+  const systemFingerprint = crypto
+    .createHash("sha256")
+    .update(VERSION + PROMPT)
+    .digest("hex")
+    .slice(0, 12);
 
+  const referenceImageUrls = referenceImages.slice(0, 3).map((r) => r.gcsUrl);
+
+  const baseMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    { role: "system", content: PROMPT },
+    ...buildFewShotMessages(),
+    {
+      role: "user",
+      content: buildUserMessage(brief, culturalContext, variationIndex),
+    },
+  ];
+
+  const MAX_ATTEMPTS = 3;
+  let messages = [...baseMessages];
+  let lastCorrected: ExpandedPrompt | null = null;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const raw = await callGpt4o(messages);
+    const output: ExpandedPrompt = { ...raw, referenceImageUrls, systemFingerprint };
+
+    const validation = validateAndCorrect(output, brief);
+
+    if (validation.violations.length > 0) {
+      const correctionsList = validation.violations
+        .map((v) => `  ${v.rule} [${v.severity}]: ${v.detail}`)
+        .join("\n");
+      console.info(
+        `[brief-expander] brief=${brief.id} attempt=${attempt} violations:\n${correctionsList}`
+      );
+    }
+
+    lastCorrected = validation.corrected;
+
+    if (!validation.retryRecommended || attempt === MAX_ATTEMPTS) {
+      return validation.corrected;
+    }
+
+    // Retry: append the model's response and a correction instruction
+    const violationLines = validation.violations
+      .map((v) => `${v.rule}: ${v.detail}`)
+      .join("\n");
+
+    console.warn(
+      `[brief-expander] brief=${brief.id} retry attempt ${attempt + 1}/${MAX_ATTEMPTS} — retryRecommended after attempt ${attempt}`
+    );
+
+    messages = [
+      ...messages,
+      { role: "assistant", content: JSON.stringify({ imagePrompt: raw.imagePrompt, negativePrompt: raw.negativePrompt }) },
+      {
+        role: "user",
+        content:
+          `Your previous expansion violated these rules:\n${violationLines}\n\n` +
+          `Regenerate the expanded prompt. Do not include feeling-sentences at the end. ` +
+          `Do not use "generic X" in the negative prompt. Keep negative prompt under 8 items. ` +
+          `Maintain all other specifications from the original brief.`,
+      },
+    ];
+  }
+
+  return lastCorrected!;
+}
+
+// Exported for report/diagnostic scripts — raw GPT-4o output before validation
+export async function _expandRaw(params: {
+  brief: Brief;
+  culturalContext: CulturalContext | null;
+  variationIndex: number;
+}): Promise<{ imagePrompt: string; negativePrompt: string }> {
+  const { brief, culturalContext, variationIndex } = params;
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: PROMPT },
     ...buildFewShotMessages(),
-    { role: "user", content: userMessage },
+    {
+      role: "user",
+      content: buildUserMessage(brief, culturalContext, variationIndex),
+    },
   ];
+  return callGpt4o(messages);
+}
 
+async function callGpt4o(
+  messages: OpenAI.Chat.ChatCompletionMessageParam[]
+): Promise<{ imagePrompt: string; negativePrompt: string }> {
   const response = await client.chat.completions.create({
     model: "gpt-4o",
     messages,
@@ -42,19 +124,9 @@ export async function expandBrief(params: {
     negativePrompt?: string;
   };
 
-  const referenceImageUrls = referenceImages.slice(0, 3).map((r) => r.gcsUrl);
-
-  const systemFingerprint = crypto
-    .createHash("sha256")
-    .update(VERSION + PROMPT)
-    .digest("hex")
-    .slice(0, 12);
-
   return {
     imagePrompt: parsed.imagePrompt ?? "",
     negativePrompt: parsed.negativePrompt ?? "",
-    referenceImageUrls,
-    systemFingerprint,
   };
 }
 
