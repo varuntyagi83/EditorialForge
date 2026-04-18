@@ -1,5 +1,5 @@
-import { auth } from "./edge.js";
-import { prisma } from "../db.js";
+import { auth } from "./edge";
+import { prisma } from "../db";
 
 export async function getSessionUser(): Promise<{ id: string; email: string } | null> {
   const session = await auth();

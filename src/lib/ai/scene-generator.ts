@@ -1,4 +1,4 @@
-import type { ExpandedPrompt } from "./brief-expander.js";
+import type { ExpandedPrompt } from "./brief-expander";
 
 const GEMINI_ENDPOINT =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-image-preview:generateContent";

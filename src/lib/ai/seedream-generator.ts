@@ -1,6 +1,6 @@
 import { fal } from "@fal-ai/client";
-import type { ExpandedPrompt } from "./brief-expander.js";
-import type { SceneResult } from "./scene-generator.js";
+import type { ExpandedPrompt } from "./brief-expander";
+import type { SceneResult } from "./scene-generator";
 
 const FAL_MODEL = "fal-ai/bytedance/seedream-v4";
 

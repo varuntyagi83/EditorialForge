@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import * as path from "path";
 import * as os from "os";
 import * as fs from "fs/promises";
-import { uploadImage } from "../storage/gcs.js";
+import { uploadImage } from "../storage/gcs";
 
 interface Zone {
   x: number;

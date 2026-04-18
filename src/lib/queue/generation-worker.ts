@@ -1,7 +1,7 @@
-import { prisma } from "../db.js";
-import { expandBrief } from "../ai/brief-expander.js";
-import { dispatchScene } from "../ai/scene-dispatcher.js";
-import { uploadImage } from "../storage/gcs.js";
+import { prisma } from "../db";
+import { expandBrief } from "../ai/brief-expander";
+import { dispatchScene } from "../ai/scene-dispatcher";
+import { uploadImage } from "../storage/gcs";
 
 // Approximate 4K dimensions per aspect ratio (used for metadata only)
 const DIMENSIONS: Record<string, [number, number]> = {
