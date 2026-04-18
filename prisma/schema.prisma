@@ -1,15 +1,239 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(uuid())
+  email           String           @unique
+  name            String?
+  emailVerified   DateTime?
+  image           String?
+  createdAt       DateTime         @default(now())
+  accounts        Account[]
+  sessions        Session[]
+  briefs          Brief[]
+  referenceImages ReferenceImage[]
+  logoAssets      LogoAsset[]
+  feedback        Feedback[]
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Brief {
+  id                   String              @id @default(uuid())
+  userId               String
+  user                 User                @relation(fields: [userId], references: [id])
+  title                String
+  culturalContextId    String?
+  culturalContext      CulturalContext?    @relation(fields: [culturalContextId], references: [id])
+  category             Category
+  protagonistArchetype String
+  environment          String
+  productFamily        String?
+  productIntegration   ProductIntegration
+  headline             String
+  subhead              String?
+  cta                  String?
+  notes                String?
+  status               BriefStatus         @default(DRAFT)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  scenes               Scene[]
+
+  @@index([createdAt(sort: Desc)])
+  @@index([userId])
+}
+
+model Scene {
+  id             String      @id @default(uuid())
+  briefId        String
+  brief          Brief       @relation(fields: [briefId], references: [id], onDelete: Cascade)
+  promptExpanded String      @db.Text
+  negativePrompt String      @db.Text
+  model          String
+  seed           BigInt?
+  gcsPath        String?
+  gcsUrl         String?
+  width          Int?
+  height         Int?
+  aspectRatio    String
+  status         SceneStatus @default(PENDING)
+  errorMessage   String?
+  createdAt      DateTime    @default(now())
+  compositions   Composition[]
+  feedback       Feedback[]
+
+  @@index([briefId])
+  @@index([createdAt(sort: Desc)])
+}
+
+model Composition {
+  id               String         @id @default(uuid())
+  sceneId          String
+  scene            Scene          @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  layoutTemplateId String
+  layoutTemplate   LayoutTemplate @relation(fields: [layoutTemplateId], references: [id])
+  headlineText     String
+  subheadText      String?
+  ctaText          String?
+  logoAssetId      String?
+  logoAsset        LogoAsset?     @relation(fields: [logoAssetId], references: [id])
+  gcsPath          String
+  gcsUrl           String
+  createdAt        DateTime       @default(now())
+
+  @@index([sceneId])
+}
+
+model LayoutTemplate {
+  id           String        @id @default(uuid())
+  name         String
+  aspectRatio  String
+  headlineZone Json
+  subheadZone  Json?
+  ctaZone      Json?
+  logoZone     Json?
+  typography   Json
+  createdAt    DateTime      @default(now())
+  compositions Composition[]
+}
+
+model CulturalContext {
+  id                    String           @id @default(uuid())
+  name                  String
+  region                String
+  category              Category
+  visualAnchors         Json
+  fabricAndColor        Json
+  typicalProtagonists   Json
+  atmosphericSignatures Json
+  forbiddenCombinations Json
+  referenceImageUrls    String[]
+  createdAt             DateTime         @default(now())
+  briefs                Brief[]
+  referenceImages       ReferenceImage[]
+}
+
+model ReferenceImage {
+  id                String           @id @default(uuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id])
+  culturalContextId String?
+  culturalContext   CulturalContext? @relation(fields: [culturalContextId], references: [id])
+  gcsPath           String
+  gcsUrl            String
+  tags              String[]
+  sourceUrl         String?
+  notes             String?
+  createdAt         DateTime         @default(now())
+
+  @@index([culturalContextId])
+  @@index([userId])
+}
+
+model LogoAsset {
+  id           String        @id @default(uuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  brandName    String
+  variant      String
+  gcsPath      String
+  gcsUrl       String
+  createdAt    DateTime      @default(now())
+  compositions Composition[]
+
+  @@index([userId])
+}
+
+model Feedback {
+  id         String             @id @default(uuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id])
+  targetType FeedbackTargetType
+  targetId   String
+  verdict    FeedbackVerdict
+  comment    String?
+  createdAt  DateTime           @default(now())
+  sceneId    String?
+  scene      Scene?             @relation(fields: [sceneId], references: [id])
+
+  @@index([targetId])
+}
+
+enum Category {
+  INDIAN_FESTIVAL
+  ABSURDIST_WESTERN
+  PREMIUM_LIFESTYLE
+  OTHER
+}
+
+enum ProductIntegration {
+  HELD
+  PLACED
+  CONSUMED
+  CENTRAL
+  ABSENT
+}
+
+enum BriefStatus {
+  DRAFT
+  GENERATING
+  READY
+  ARCHIVED
+}
+
+enum SceneStatus {
+  PENDING
+  GENERATING
+  READY
+  FAILED
+}
+
+enum FeedbackTargetType {
+  SCENE
+  COMPOSITION
+}
+
+enum FeedbackVerdict {
+  LOVE
+  GOOD
+  MEH
+  REJECT
 }
