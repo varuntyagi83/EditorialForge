@@ -149,14 +149,14 @@ describe("Rule 3: negative prompt cap", () => {
       .split(",")
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
-    expect(items.length).toBe(8);
+    expect(items.length).toBe(7);
     expect(
       result.violations.some((v) => v.rule === "Rule 3: Negative prompt cap")
     ).toBe(true);
     expect(
       result.violations.find((v) => v.rule === "Rule 3: Negative prompt cap")
         ?.detail
-    ).toMatch(/trimmed 12 items to 8/i);
+    ).toMatch(/trimmed 12 items to 7/i);
   });
 
   it("leaves a 3-item negative prompt unchanged", () => {

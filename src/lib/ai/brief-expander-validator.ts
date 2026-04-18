@@ -112,14 +112,14 @@ export function validateAndCorrect(
     });
   }
 
-  // Rule 3: Cap negative prompt at 8 items
-  if (negItems.length > 8) {
+  // Rule 3: Cap at 7 items — matches system prompt: 4 core + max 3 brief-specific
+  if (negItems.length > 7) {
     const countBefore = negItems.length;
-    negItems = negItems.slice(0, 8);
+    negItems = negItems.slice(0, 7);
     violations.push({
       rule: "Rule 3: Negative prompt cap",
       severity: "auto-corrected",
-      detail: `Trimmed ${countBefore} items to 8`,
+      detail: `Trimmed ${countBefore} items to 7`,
     });
   }
 
