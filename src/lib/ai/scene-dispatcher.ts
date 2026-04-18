@@ -1,8 +1,8 @@
 import type { CulturalContext } from "@prisma/client";
-import type { ExpandedPrompt } from "./brief-expander.js";
-import type { SceneResult } from "./scene-generator.js";
-import { generateScene } from "./scene-generator.js";
-import { generateSceneSeedream } from "./seedream-generator.js";
+import type { ExpandedPrompt } from "./brief-expander";
+import type { SceneResult } from "./scene-generator";
+import { generateScene } from "./scene-generator";
+import { generateSceneSeedream } from "./seedream-generator";
 
 // Regions where South/East Asian face fidelity is critical — route to Seedream
 const SEEDREAM_REGIONS = new Set(["south-asia", "east-asia"]);

@@ -1,5 +1,5 @@
 import type { Brief } from "@prisma/client";
-import type { ExpandedPrompt } from "./brief-expander.js";
+import type { ExpandedPrompt } from "./brief-expander";
 
 export type ValidationViolation = {
   rule: string;

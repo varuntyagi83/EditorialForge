@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 import type { Brief, CulturalContext, ReferenceImage } from "@prisma/client";
-import { VERSION, PROMPT } from "./prompts/brief-expander.system.js";
-import { FEW_SHOT_EXAMPLES } from "./prompts/brief-expander.examples.js";
-import { validateAndCorrect } from "./brief-expander-validator.js";
+import { VERSION, PROMPT } from "./prompts/brief-expander.system";
+import { FEW_SHOT_EXAMPLES } from "./prompts/brief-expander.examples";
+import { validateAndCorrect } from "./brief-expander-validator";
 import crypto from "crypto";
 
 export type ExpandedPrompt = {
