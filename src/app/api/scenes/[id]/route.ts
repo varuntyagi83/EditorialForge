@@ -21,5 +21,9 @@ export async function GET(_req: Request, { params }: Params) {
 
   if (!scene) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  return NextResponse.json({ ...scene, queued: isQueued(id) });
+  return NextResponse.json({
+    ...scene,
+    seed: scene.seed !== null ? Number(scene.seed) : null,
+    queued: isQueued(id),
+  });
 }

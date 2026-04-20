@@ -19,9 +19,11 @@ export const authConfig: NextAuthConfig = {
     }),
   ],
   callbacks: {
-    signIn({ user }) {
-      if (!user.email) return false;
-      return ALLOWED_EMAILS.includes(user.email);
+    signIn({ user, email: emailDetails }) {
+      console.log("[auth][signIn]", JSON.stringify({ user, emailDetails }));
+      const address = user.email?.toLowerCase().trim();
+      if (!address) return true; // let verification-request phase pass; checked again on link click
+      return ALLOWED_EMAILS.map((e) => e.toLowerCase()).includes(address);
     },
   },
 };

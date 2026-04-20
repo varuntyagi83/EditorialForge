@@ -18,7 +18,7 @@ export async function dispatchScene(params: {
   const useSeedream =
     culturalContext !== null && SEEDREAM_REGIONS.has(culturalContext.region);
 
-  const model = useSeedream ? "seedream-v4" : "gemini-3.1-pro-image-preview";
+  const model = useSeedream ? "seedream-v4" : "nano-banana-pro-preview";
   console.log(
     `[scene-dispatcher] model=${model} region=${culturalContext?.region ?? "none"} seed=${variationSeed ?? "random"}`
   );

@@ -38,6 +38,7 @@ type Scene = {
   id: string;
   status: string;
   gcsUrl?: string | null;
+  gcsPath?: string | null;
   errorMessage?: string | null;
   createdAt: string;
 };
@@ -139,8 +140,7 @@ export function BriefDetail({
         body: JSON.stringify({ count: genCount, aspectRatio: genAspect }),
       });
       if (!res.ok) throw new Error();
-      const data = await res.json();
-      setScenes((prev) => [...(data.scenes ?? []), ...prev]);
+      await pollScenes();
     } catch {
       // leave existing scenes
     } finally {
