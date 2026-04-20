@@ -12,7 +12,9 @@ export type ExpandedPrompt = {
   systemFingerprint: string;
 };
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getClient() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 export async function expandBrief(params: {
   brief: Brief;
@@ -111,7 +113,7 @@ export async function _expandRaw(params: {
 async function callGpt4o(
   messages: OpenAI.Chat.ChatCompletionMessageParam[]
 ): Promise<{ imagePrompt: string; negativePrompt: string }> {
-  const response = await client.chat.completions.create({
+  const response = await getClient().chat.completions.create({
     model: "gpt-4o",
     messages,
     temperature: 0.4,
