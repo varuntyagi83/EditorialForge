@@ -2,6 +2,7 @@ import type { CulturalContext } from "@prisma/client";
 import type { ExpandedPrompt } from "./brief-expander";
 import type { SceneResult } from "./scene-generator";
 import { generateScene } from "./scene-generator";
+import { generateSceneImagen } from "./imagen-generator";
 import { generateSceneSeedream } from "./seedream-generator";
 
 // Regions where South/East Asian face fidelity is critical — route to Seedream
@@ -18,14 +19,22 @@ export async function dispatchScene(params: {
   const useSeedream =
     culturalContext !== null && SEEDREAM_REGIONS.has(culturalContext.region);
 
-  const model = useSeedream ? "seedream-v4" : "nano-banana-pro-preview";
-  console.log(
-    `[scene-dispatcher] model=${model} region=${culturalContext?.region ?? "none"} seed=${variationSeed ?? "random"}`
-  );
+  if (useSeedream) {
+    console.log(
+      `[scene-dispatcher] model=seedream-v4 region=${culturalContext?.region} seed=${variationSeed ?? "random"}`
+    );
+    const result = await generateSceneSeedream({ expandedPrompt, aspectRatio, variationSeed });
+    return { ...result, model: "seedream-v4" };
+  }
 
-  const result = useSeedream
-    ? await generateSceneSeedream({ expandedPrompt, aspectRatio, variationSeed })
-    : await generateScene({ expandedPrompt, aspectRatio, variationSeed });
-
-  return { ...result, model };
+  // Primary: Imagen 4 Ultra — fall back to nano-banana-pro-preview on error
+  console.log(`[scene-dispatcher] model=imagen-4.0-ultra seed=${variationSeed ?? "random"}`);
+  try {
+    const result = await generateSceneImagen({ expandedPrompt, aspectRatio, variationSeed });
+    return { ...result, model: "imagen-4.0-ultra-generate-001" };
+  } catch (err) {
+    console.warn(`[scene-dispatcher] Imagen 4 Ultra failed, falling back to nano-banana-pro-preview: ${(err as Error).message}`);
+    const result = await generateScene({ expandedPrompt, aspectRatio, variationSeed });
+    return { ...result, model: "nano-banana-pro-preview" };
+  }
 }
