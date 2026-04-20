@@ -44,7 +44,6 @@ RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 USER nextjs
 
 EXPOSE 3000
-ENV PORT=3000
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 
