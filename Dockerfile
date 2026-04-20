@@ -19,6 +19,8 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
+# Prisma 6 validates DATABASE_URL at generate time — dummy value is fine, no DB connection is made
+ENV DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
 RUN npx prisma generate
 RUN npm run build
 
