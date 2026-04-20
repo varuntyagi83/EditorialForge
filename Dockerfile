@@ -48,4 +48,4 @@ ENV PORT=3000
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy 2>&1 || echo '[startup] migrate deploy failed — starting server anyway'; node server.js"]
+CMD ["node", "server.js"]
