@@ -27,14 +27,15 @@ export async function dispatchScene(params: {
     return { ...result, model: "seedream-v4" };
   }
 
-  // Primary: Imagen 4 Ultra — fall back to nano-banana-pro-preview on error
-  console.log(`[scene-dispatcher] model=imagen-4.0-ultra seed=${variationSeed ?? "random"}`);
+  // Primary: nano-banana-pro-preview — supports negative prompts, compositor-safe
+  // Fall back to Imagen 4 Ultra only if primary fails
+  console.log(`[scene-dispatcher] model=nano-banana-pro-preview seed=${variationSeed ?? "random"}`);
   try {
-    const result = await generateSceneImagen({ expandedPrompt, aspectRatio, variationSeed });
-    return { ...result, model: "imagen-4.0-ultra-generate-001" };
-  } catch (err) {
-    console.warn(`[scene-dispatcher] Imagen 4 Ultra failed, falling back to nano-banana-pro-preview: ${(err as Error).message}`);
     const result = await generateScene({ expandedPrompt, aspectRatio, variationSeed });
     return { ...result, model: "nano-banana-pro-preview" };
+  } catch (err) {
+    console.warn(`[scene-dispatcher] nano-banana-pro-preview failed, falling back to imagen-4.0-ultra: ${(err as Error).message}`);
+    const result = await generateSceneImagen({ expandedPrompt, aspectRatio, variationSeed });
+    return { ...result, model: "imagen-4.0-ultra-generate-001" };
   }
 }
