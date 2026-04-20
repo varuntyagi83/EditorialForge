@@ -5,22 +5,22 @@ import * as fs from "fs";
 import * as path from "path";
 
 const BRIEF = {
-  id: "test-1",
+  id: "test-2",
   userId: "test",
   status: "DRAFT" as const,
   createdAt: new Date(),
   updatedAt: new Date(),
   culturalContextId: null,
-  title: "Chai wallah at Howrah station at 5am",
-  category: "INDIAN_FESTIVAL" as const,
-  protagonistArchetype: "Male chai wallah, 55, weathered, Bihari",
-  environment: "Howrah Railway Station platform 7, pre-dawn 5am, winter",
-  productFamily: "Clay kulhad chai",
-  productIntegration: "CENTRAL" as const,
-  headline: "Brewed before the city wakes",
-  subhead: null,
+  title: "Oatly billboard hijack at a Delhi flyover during rush hour",
+  category: "URBAN_STREET" as const,
+  protagonistArchetype: "Young woman, 28, architect, Delhi, on a scooter stuck in traffic",
+  environment: "Delhi Ring Road flyover, evening golden hour, dense gridlock, monsoon aftermath puddles",
+  productFamily: "Oatly Oat Drink carton",
+  productIntegration: "INCIDENTAL" as const,
+  headline: "Weird, right?",
+  subhead: "Milk but made from oats",
   cta: null,
-  notes: null,
+  notes: "Liquid Death energy — irreverent, anti-ad tone. Billboard in background reads something absurd.",
 };
 
 async function run() {
@@ -36,7 +36,7 @@ async function run() {
   console.log("\nStep 2: Generating scene...");
   const result = await dispatchScene({
     expandedPrompt: expanded,
-    aspectRatio: "4:5",
+    aspectRatio: "16:9",
     variationSeed: 42,
     culturalContext: null,
   });

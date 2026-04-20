@@ -1,7 +1,7 @@
 import type { ExpandedPrompt } from "./brief-expander";
 
 const GEMINI_ENDPOINT =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-image-preview:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/nano-banana-pro-preview:generateContent";
 
 const TIMEOUT_MS = 180_000;
 const MAX_RETRIES = 4;
@@ -23,16 +23,14 @@ export async function generateScene(params: {
   if (!apiKey) throw new Error("GOOGLE_GEMINI_API_KEY is not set");
 
   const seed = variationSeed ?? Math.floor(Math.random() * 2 ** 31);
-  const parts = await buildParts(expandedPrompt);
+  const parts = await buildParts(expandedPrompt, aspectRatio);
 
   const body = {
     contents: [{ parts }],
     generationConfig: {
       temperature: 0.7,
-      imageSize: "4K",
       responseModalities: ["IMAGE"],
       seed,
-      aspectRatio,
     },
   };
 
@@ -62,7 +60,10 @@ type GeminiPart =
   | { text: string }
   | { inlineData: { mimeType: string; data: string } };
 
-async function buildParts(expandedPrompt: ExpandedPrompt): Promise<GeminiPart[]> {
+async function buildParts(
+  expandedPrompt: ExpandedPrompt,
+  aspectRatio: "1:1" | "16:9" | "4:5" | "9:16"
+): Promise<GeminiPart[]> {
   const parts: GeminiPart[] = [];
 
   // Reference images before the text prompt, as required by Gemini multimodal API
@@ -75,9 +76,17 @@ async function buildParts(expandedPrompt: ExpandedPrompt): Promise<GeminiPart[]>
     }
   }
 
+  const ratioLabel: Record<string, string> = {
+    "1:1": "square format",
+    "16:9": "wide cinematic landscape format",
+    "4:5": "portrait format",
+    "9:16": "tall vertical portrait format",
+  };
+  const ratioInstruction = `Compose image in ${ratioLabel[aspectRatio] ?? "portrait format"}.`;
+
   const fullPrompt = expandedPrompt.negativePrompt
-    ? `${expandedPrompt.imagePrompt}\n\nAvoid: ${expandedPrompt.negativePrompt}`
-    : expandedPrompt.imagePrompt;
+    ? `${expandedPrompt.imagePrompt}\n\n${ratioInstruction}\n\nAvoid: ${expandedPrompt.negativePrompt}`
+    : `${expandedPrompt.imagePrompt}\n\n${ratioInstruction}`;
 
   parts.push({ text: fullPrompt });
   return parts;

@@ -26,7 +26,12 @@ export async function GET(_req: Request, { params }: Params) {
   });
 
   if (!brief) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(brief);
+
+  const serialized = {
+    ...brief,
+    scenes: brief.scenes.map((s) => ({ ...s, seed: s.seed !== null ? Number(s.seed) : null })),
+  };
+  return NextResponse.json(serialized);
 }
 
 export async function PATCH(request: Request, { params }: Params) {
