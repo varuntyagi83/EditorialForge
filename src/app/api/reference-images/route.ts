@@ -67,7 +67,6 @@ export async function POST(request: Request) {
     data: {
       userId: user.id,
       gcsPath,
-      gcsUrl: gcsPath, // placeholder — Phase C migration drops this column
       culturalContextId: meta.data.culturalContextId ?? null,
       tags: meta.data.tags,
       sourceUrl: meta.data.sourceUrl ?? null,

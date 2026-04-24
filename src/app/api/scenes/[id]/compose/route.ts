@@ -59,7 +59,6 @@ export async function POST(request: Request, { params }: Params) {
       ctaText: ctaText ?? null,
       logoAssetId: logoAssetId ?? null,
       gcsPath,
-      gcsUrl: gcsPath, // placeholder — Phase C migration drops this column
     },
   });
 
