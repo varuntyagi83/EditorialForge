@@ -9,7 +9,7 @@ import { Loader2, Upload } from "lucide-react";
 
 type ReferenceImage = {
   id: string;
-  gcsUrl: string;
+  signedUrl: string;
   tags: string[];
   notes: string | null;
   culturalContextId: string | null;
@@ -218,7 +218,7 @@ export default function ReferencesPage() {
               >
                 <div className="aspect-square">
                   <img
-                    src={img.gcsUrl}
+                    src={img.signedUrl}
                     alt=""
                     className="w-full h-full object-cover"
                   />

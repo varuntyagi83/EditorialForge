@@ -21,13 +21,13 @@ type Scene = {
   id: string;
   briefId: string;
   status: string;
-  gcsUrl: string | null;
+  signedUrl: string | null;
   promptExpanded: string;
   negativePrompt: string;
   model: string;
   aspectRatio: string;
   feedback: Array<{ verdict: string; comment: string | null }>;
-  compositions: Array<{ id: string; gcsUrl: string; headlineText: string }>;
+  compositions: Array<{ id: string; signedUrl: string; headlineText: string }>;
 };
 
 const VERDICTS = [
@@ -148,9 +148,9 @@ export default function ScenePage({
       <div className="flex h-screen overflow-hidden">
         {/* Large image preview */}
         <div className="flex-1 bg-neutral-900 flex items-center justify-center overflow-hidden">
-          {scene.gcsUrl ? (
+          {scene.signedUrl ? (
             <img
-              src={scene.gcsUrl}
+              src={scene.signedUrl}
               alt="Scene"
               className="max-h-full max-w-full object-contain"
             />
@@ -172,9 +172,9 @@ export default function ScenePage({
               <p className="text-xs text-neutral-500">{scene.model}</p>
               <p className="text-xs text-neutral-600">{scene.aspectRatio}</p>
             </div>
-            {scene.gcsUrl && (
+            {scene.signedUrl && (
               <a
-                href={scene.gcsUrl}
+                href={scene.signedUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-neutral-500 hover:text-white transition-colors"

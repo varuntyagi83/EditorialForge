@@ -1,70 +1,20 @@
 # Phase B cleanup checklist
 
-Items left intentionally incomplete in Phase A. Do not start Phase B until
-Phase A is verified working on the Railway deployment.
+## Status: COMPLETE
+
+All items resolved in Phase B commit. Phase C (migration) is the only
+remaining step.
 
 ---
 
-## Temporary inline URL construction (must remove in Phase B)
-
-### `src/lib/compositor/index.ts:94`
-```ts
-// Phase A temporary: public URL stored until Phase B removes gcsUrl column
-const gcsUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME!}/${gcsPath}`;
-```
-Phase B removes `gcsUrl` from `ComposeResult`, stops writing it to the
-`Composition` table, and signs `composition.gcsPath` at read time in:
-- `src/app/api/scenes/[id]/compose/route.ts` (sign before returning response)
-- `src/app/api/compositions/[id]/route.ts` (sign at GET response time)
-- The compositor also receives `sceneUrl` and `logoUrl` as raw public URLs
-  from `compose/route.ts`; those must become signed URLs (600s TTL) before
-  being passed to the Python script.
-
-### `src/app/api/reference-images/route.ts:54`
-```ts
-// Phase A temporary: public URL stored until Phase B removes gcsUrl column
-const gcsUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME!}/${gcsPath}`;
-```
-Phase B stops writing `gcsUrl` on upload and signs `gcsPath` at response
-time in the GET handler instead.
-
----
-
-## Prop name inconsistency in BriefDetail
-
-`src/app/briefs/[id]/page.tsx` passes scenes to `BriefDetail` with a field
-called `gcsUrl` that now carries a signed URL, not a GCS URL. The prop
-type in `src/app/briefs/[id]/brief-detail.tsx:40` also says `gcsUrl`.
-
-Phase B rename: `gcsUrl` -> `imageUrl` in the scene prop type and all
-reference sites in `brief-detail.tsx`. Low risk, cosmetic only — do it
-alongside the other Phase B changes.
-
----
-
-## Dead code to remove
-
-`src/lib/ai/brief-expander.ts:33` assembles `referenceImageUrls` from
-`referenceImages[].gcsUrl` but the value is never passed to GPT-4o and
-never consumed by `generation-worker.ts`. Remove the field from
-`ExpandedPrompt` and delete line 33.
-
----
-
-## Phase B scope (write path + APIs)
-
-Change 3: `src/lib/compositor/index.ts` — remove `gcsUrl` from `ComposeResult`  
-Change 4: `src/app/api/scenes/[id]/compose/route.ts` — sign `scene.gcsPath`
-          (600s) for compositor input; sign composition path (3600s) in response  
-Change 5: `src/app/api/reference-images/route.ts` — sign at GET response time  
-Change 6: `src/app/api/scenes/[id]/route.ts` — sign `scene.gcsPath` and each
-          `composition.gcsPath` in the JSON response  
-Change 7: `src/app/api/briefs/route.ts` — sign scene thumbnail in response  
-
-## Migration (last, after Phase B verified)
+## Phase C — Migration (run after Phase B is verified in production)
 
 Drop `gcsUrl` columns from all four tables. All rows have `gcsPath` set —
 confirmed by prod query on 2026-04-25 (all five safety checks returned 0).
+
+`gcsUrl` placeholder values in `Composition` and `ReferenceImage` rows
+created after Phase B deployment will contain the `gcsPath` string rather
+than a URL — this is intentional and safe to drop.
 
 ```sql
 ALTER TABLE "Scene" DROP COLUMN "gcsUrl";
@@ -72,3 +22,23 @@ ALTER TABLE "Composition" DROP COLUMN "gcsUrl";
 ALTER TABLE "ReferenceImage" DROP COLUMN "gcsUrl";
 ALTER TABLE "LogoAsset" DROP COLUMN "gcsUrl";
 ```
+
+After running the SQL, remove the `gcsUrl` fields from `prisma/schema.prisma`
+and run `npx prisma generate` to update the Prisma client. No `prisma migrate`
+needed since the SQL runs directly against prod.
+
+---
+
+## Resolved in Phase B
+
+- [x] `compositor/index.ts` — removed `gcsUrl` from `ComposeResult`; Python
+      compositor now receives signed URLs (600s) for `scene_url` and `logo_url`
+- [x] `reference-images/route.ts` — POST stores `gcsPath` as `gcsUrl` placeholder;
+      GET signs at 3600s and returns `signedUrl`
+- [x] `gcsUrl` prop name in `BriefDetail` — renamed to `signedUrl` throughout
+- [x] `brief-expander.ts` — `referenceImageUrls` was NOT dead code; `scene-generator.ts`
+      uses it for Gemini multimodal. Refactored: `expandBrief` now accepts
+      `referenceImageUrls: string[]` directly; `generation-worker.ts` signs the
+      reference image paths at 3600s before calling `expandBrief`
+- [x] All API routes (`scenes/[id]`, `briefs`, `compositions/[id]`, `compose`)
+      return `signedUrl` instead of raw `gcsUrl`

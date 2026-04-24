@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { expandBrief } from "../brief-expander";
-import type { Brief, CulturalContext, ReferenceImage } from "@prisma/client";
+import type { Brief, CulturalContext } from "@prisma/client";
 
 // Mock OpenAI
 vi.mock("openai", () => {
@@ -66,7 +66,7 @@ describe("expandBrief", () => {
     const result = await expandBrief({
       brief: mockBrief,
       culturalContext: mockCulturalContext,
-      referenceImages: [],
+      referenceImageUrls: [],
       variationIndex: 0,
     });
     expect(result.imagePrompt.length).toBeGreaterThanOrEqual(800);
@@ -77,7 +77,7 @@ describe("expandBrief", () => {
     const result = await expandBrief({
       brief: mockBrief,
       culturalContext: mockCulturalContext,
-      referenceImages: [],
+      referenceImageUrls: [],
       variationIndex: 0,
     });
     expect(result.negativePrompt).toMatch(/no rendered text/i);
@@ -89,7 +89,7 @@ describe("expandBrief", () => {
     const result = await expandBrief({
       brief: mockBrief,
       culturalContext: mockCulturalContext,
-      referenceImages: [],
+      referenceImageUrls: [],
       variationIndex: 0,
     });
     expect(result.systemFingerprint).toMatch(/^[0-9a-f]{12}$/);
@@ -99,37 +99,27 @@ describe("expandBrief", () => {
     const result0 = await expandBrief({
       brief: mockBrief,
       culturalContext: null,
-      referenceImages: [],
+      referenceImageUrls: [],
       variationIndex: 0,
     });
     const result3 = await expandBrief({
       brief: mockBrief,
       culturalContext: null,
-      referenceImages: [],
+      referenceImageUrls: [],
       variationIndex: 3,
     });
     expect(result0.imagePrompt).toBeTruthy();
     expect(result3.imagePrompt).toBeTruthy();
   });
 
-  it("caps referenceImageUrls to 3", async () => {
-    const manyRefs: ReferenceImage[] = Array.from({ length: 6 }, (_, i) => ({
-      id: `ref-${i}`,
-      userId: "user",
-      culturalContextId: null,
-      gcsPath: `path/${i}.jpg`,
-      gcsUrl: `https://storage.googleapis.com/bucket/path/${i}.jpg`,
-      tags: [],
-      sourceUrl: null,
-      notes: null,
-      createdAt: new Date(),
-    }));
+  it("passes referenceImageUrls through to the result", async () => {
+    const urls = ["https://signed.example.com/a.jpg", "https://signed.example.com/b.jpg"];
     const result = await expandBrief({
       brief: mockBrief,
       culturalContext: null,
-      referenceImages: manyRefs,
+      referenceImageUrls: urls,
       variationIndex: 0,
     });
-    expect(result.referenceImageUrls.length).toBeLessThanOrEqual(3);
+    expect(result.referenceImageUrls).toEqual(urls);
   });
 });

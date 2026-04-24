@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth/server";
 import { ComposeSchema } from "@/lib/validation/scene";
 import { compose } from "@/lib/compositor";
+import { getSignedUrl } from "@/lib/storage/gcs";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -14,7 +15,7 @@ export async function POST(request: Request, { params }: Params) {
 
   const scene = await prisma.scene.findUnique({ where: { id } });
   if (!scene) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (scene.status !== "READY" || !scene.gcsUrl) {
+  if (scene.status !== "READY" || !scene.gcsPath) {
     return NextResponse.json({ error: "Scene not ready" }, { status: 409 });
   }
 
@@ -33,14 +34,20 @@ export async function POST(request: Request, { params }: Params) {
     ? await prisma.logoAsset.findUnique({ where: { id: logoAssetId } })
     : null;
 
-  const { gcsPath, gcsUrl } = await compose({
+  // Sign source URLs for Python compositor — 600s is enough, download happens immediately
+  const [sceneUrl, logoUrl] = await Promise.all([
+    getSignedUrl(scene.gcsPath, 600),
+    logoAsset?.gcsPath ? getSignedUrl(logoAsset.gcsPath, 600) : Promise.resolve(null),
+  ]);
+
+  const { gcsPath } = await compose({
     sceneId: id,
-    sceneUrl: scene.gcsUrl,
+    sceneUrl,
     layoutTemplate,
     headlineText,
     subheadText: subheadText ?? null,
     ctaText: ctaText ?? null,
-    logoUrl: logoAsset?.gcsUrl ?? null,
+    logoUrl,
   });
 
   const composition = await prisma.composition.create({
@@ -52,9 +59,21 @@ export async function POST(request: Request, { params }: Params) {
       ctaText: ctaText ?? null,
       logoAssetId: logoAssetId ?? null,
       gcsPath,
-      gcsUrl,
+      gcsUrl: gcsPath, // placeholder — Phase C migration drops this column
     },
   });
 
-  return NextResponse.json(composition, { status: 201 });
+  const signedUrl = await getSignedUrl(gcsPath, 3600);
+
+  return NextResponse.json({
+    id: composition.id,
+    sceneId: composition.sceneId,
+    layoutTemplateId: composition.layoutTemplateId,
+    headlineText: composition.headlineText,
+    subheadText: composition.subheadText,
+    ctaText: composition.ctaText,
+    gcsPath: composition.gcsPath,
+    signedUrl,
+    createdAt: composition.createdAt,
+  }, { status: 201 });
 }

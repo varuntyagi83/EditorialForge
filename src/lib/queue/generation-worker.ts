@@ -1,7 +1,7 @@
 import { prisma } from "../db";
 import { expandBrief } from "../ai/brief-expander";
 import { dispatchScene } from "../ai/scene-dispatcher";
-import { uploadImage } from "../storage/gcs";
+import { uploadImage, getSignedUrl } from "../storage/gcs";
 
 // Approximate 4K dimensions per aspect ratio (used for metadata only)
 const DIMENSIONS: Record<string, [number, number]> = {
@@ -41,10 +41,14 @@ export async function generateSceneWork(sceneId: string): Promise<void> {
     });
     const variationIndex = (siblingCount - 1) % 8;
 
+    const referenceImageUrls = await Promise.all(
+      referenceImages.slice(0, 3).map((img) => getSignedUrl(img.gcsPath, 3600))
+    );
+
     const expandedPrompt = await expandBrief({
       brief,
       culturalContext,
-      referenceImages,
+      referenceImageUrls,
       variationIndex,
     });
 

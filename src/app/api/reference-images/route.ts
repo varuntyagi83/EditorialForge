@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth/server";
 import { CreateReferenceImageSchema } from "@/lib/validation/reference-image";
-import { uploadImage } from "@/lib/storage/gcs";
+import { uploadImage, getSignedUrl } from "@/lib/storage/gcs";
 
 export async function GET(request: Request) {
   const user = await getSessionUser();
@@ -19,7 +19,20 @@ export async function GET(request: Request) {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(images);
+  const signed = await Promise.all(
+    images.map(async (img) => ({
+      id: img.id,
+      gcsPath: img.gcsPath,
+      signedUrl: await getSignedUrl(img.gcsPath, 3600),
+      tags: img.tags,
+      sourceUrl: img.sourceUrl,
+      notes: img.notes,
+      culturalContextId: img.culturalContextId,
+      createdAt: img.createdAt,
+    }))
+  );
+
+  return NextResponse.json(signed);
 }
 
 export async function POST(request: Request) {
@@ -49,14 +62,12 @@ export async function POST(request: Request) {
   const ext = file.name.split(".").pop() ?? "jpg";
   const gcsPath = `reference-images/${user.id}/${Date.now()}.${ext}`;
   await uploadImage(buffer, gcsPath, file.type || "image/jpeg");
-  // Phase A temporary: public URL stored until Phase B removes gcsUrl column
-  const gcsUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME!}/${gcsPath}`;
 
   const image = await prisma.referenceImage.create({
     data: {
       userId: user.id,
       gcsPath,
-      gcsUrl,
+      gcsUrl: gcsPath, // placeholder — Phase C migration drops this column
       culturalContextId: meta.data.culturalContextId ?? null,
       tags: meta.data.tags,
       sourceUrl: meta.data.sourceUrl ?? null,
@@ -64,5 +75,16 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json(image, { status: 201 });
+  const signedUrl = await getSignedUrl(gcsPath, 3600);
+
+  return NextResponse.json({
+    id: image.id,
+    gcsPath: image.gcsPath,
+    signedUrl,
+    tags: image.tags,
+    sourceUrl: image.sourceUrl,
+    notes: image.notes,
+    culturalContextId: image.culturalContextId,
+    createdAt: image.createdAt,
+  }, { status: 201 });
 }

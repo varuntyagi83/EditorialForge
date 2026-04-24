@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth/server";
+import { getSignedUrl } from "@/lib/storage/gcs";
 import { CreateBriefSchema } from "@/lib/validation/brief";
 
 export async function GET() {
@@ -15,12 +16,27 @@ export async function GET() {
         where: { status: "READY" },
         orderBy: { createdAt: "desc" },
         take: 1,
-        select: { gcsUrl: true, id: true },
+        select: { gcsPath: true, id: true },
       },
     },
   });
 
-  return NextResponse.json(briefs);
+  const signed = await Promise.all(
+    briefs.map(async (brief) => {
+      const thumbPath = brief.scenes[0]?.gcsPath ?? null;
+      return {
+        id: brief.id,
+        title: brief.title,
+        category: brief.category,
+        status: brief.status,
+        createdAt: brief.createdAt,
+        _count: brief._count,
+        thumbSignedUrl: thumbPath ? await getSignedUrl(thumbPath, 3600) : null,
+      };
+    })
+  );
+
+  return NextResponse.json(signed);
 }
 
 export async function POST(request: Request) {

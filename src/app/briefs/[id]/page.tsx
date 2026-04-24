@@ -32,7 +32,7 @@ export default async function BriefPage({ params }: Params) {
     brief.scenes.map(async (s) => ({
       id: s.id,
       status: s.status,
-      gcsUrl: s.gcsPath ? await getSignedUrl(s.gcsPath, 3600) : null,
+      signedUrl: s.gcsPath ? await getSignedUrl(s.gcsPath, 3600) : null,
       errorMessage: s.errorMessage,
       createdAt: s.createdAt.toISOString(),
     }))

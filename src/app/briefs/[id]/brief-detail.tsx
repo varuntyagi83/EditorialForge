@@ -37,8 +37,7 @@ const STATUS_COLOR: Record<string, string> = {
 type Scene = {
   id: string;
   status: string;
-  gcsUrl?: string | null;
-  gcsPath?: string | null;
+  signedUrl?: string | null;
   errorMessage?: string | null;
   createdAt: string;
 };
@@ -367,10 +366,10 @@ function SceneCard({
 
   return (
     <div className="relative bg-neutral-900 rounded-lg overflow-hidden border border-neutral-800 aspect-[4/5]">
-      {isReady && scene.gcsUrl ? (
+      {isReady && scene.signedUrl ? (
         <Link href={`/briefs/${briefId}/scenes/${scene.id}`} className="block w-full h-full">
           <img
-            src={scene.gcsUrl}
+            src={scene.signedUrl}
             alt="Scene"
             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
           />

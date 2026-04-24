@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import type { Brief, CulturalContext, ReferenceImage } from "@prisma/client";
+import type { Brief, CulturalContext } from "@prisma/client";
 import { VERSION, PROMPT } from "./prompts/brief-expander.system";
 import { FEW_SHOT_EXAMPLES } from "./prompts/brief-expander.examples";
 import { validateAndCorrect } from "./brief-expander-validator";
@@ -19,18 +19,16 @@ function getClient() {
 export async function expandBrief(params: {
   brief: Brief;
   culturalContext: CulturalContext | null;
-  referenceImages: ReferenceImage[];
+  referenceImageUrls: string[];
   variationIndex: number;
 }): Promise<ExpandedPrompt> {
-  const { brief, culturalContext, referenceImages, variationIndex } = params;
+  const { brief, culturalContext, referenceImageUrls, variationIndex } = params;
 
   const systemFingerprint = crypto
     .createHash("sha256")
     .update(VERSION + PROMPT)
     .digest("hex")
     .slice(0, 12);
-
-  const referenceImageUrls = referenceImages.slice(0, 3).map((r) => r.gcsUrl);
 
   const baseMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: PROMPT },
