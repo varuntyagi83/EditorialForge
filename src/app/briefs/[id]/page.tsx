@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { auth } from "@/lib/auth/edge";
 import { prisma } from "@/lib/db";
+import { getSignedUrl } from "@/lib/storage/gcs";
 import { AppShell } from "@/components/layout/app-shell";
 import { BriefDetail } from "./brief-detail";
 
@@ -27,13 +28,15 @@ export default async function BriefPage({ params }: Params) {
 
   if (!brief) notFound();
 
-  const scenes = brief.scenes.map((s) => ({
-    id: s.id,
-    status: s.status,
-    gcsUrl: s.gcsUrl,
-    errorMessage: s.errorMessage,
-    createdAt: s.createdAt.toISOString(),
-  }));
+  const scenes = await Promise.all(
+    brief.scenes.map(async (s) => ({
+      id: s.id,
+      status: s.status,
+      gcsUrl: s.gcsPath ? await getSignedUrl(s.gcsPath, 3600) : null,
+      errorMessage: s.errorMessage,
+      createdAt: s.createdAt.toISOString(),
+    }))
+  );
 
   const briefData = {
     id: brief.id,

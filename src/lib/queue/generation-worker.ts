@@ -56,7 +56,7 @@ export async function generateSceneWork(sceneId: string): Promise<void> {
 
     const ext = result.mimeType.split("/")[1] ?? "jpg";
     const gcsPath = `scenes/${brief.id}/${sceneId}.${ext}`;
-    const gcsUrl = await uploadImage(result.imageBuffer, gcsPath, result.mimeType);
+    await uploadImage(result.imageBuffer, gcsPath, result.mimeType);
 
     const [width, height] = DIMENSIONS[scene.aspectRatio] ?? [null, null];
 
@@ -65,7 +65,6 @@ export async function generateSceneWork(sceneId: string): Promise<void> {
       data: {
         status: "READY",
         gcsPath,
-        gcsUrl,
         model: result.model,
         seed: result.seed,
         promptExpanded: expandedPrompt.imagePrompt,

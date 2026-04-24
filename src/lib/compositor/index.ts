@@ -88,7 +88,9 @@ export async function compose(params: ComposeParams): Promise<ComposeResult> {
 
   const buffer = await fs.readFile(localPath);
   const gcsPath = `compositions/${params.sceneId}/${randomUUID()}.png`;
-  const gcsUrl = await uploadImage(buffer, gcsPath, "image/png");
+  await uploadImage(buffer, gcsPath, "image/png");
+  // Phase A temporary: public URL stored until Phase B removes gcsUrl column
+  const gcsUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME!}/${gcsPath}`;
 
   await fs.unlink(localPath).catch(() => {});
 

@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth/edge";
 import { prisma } from "@/lib/db";
+import { getSignedUrl } from "@/lib/storage/gcs";
 import { AppShell } from "@/components/layout/app-shell";
 import { ArrowLeft, Download } from "lucide-react";
 
@@ -19,6 +20,11 @@ export default async function CompositionPage({ params }: Params) {
   });
 
   if (!composition) notFound();
+
+  const [displayUrl, downloadUrl] = await Promise.all([
+    getSignedUrl(composition.gcsPath, 3600),
+    getSignedUrl(composition.gcsPath, 86400),
+  ]);
 
   return (
     <AppShell user={session.user}>
@@ -39,7 +45,7 @@ export default async function CompositionPage({ params }: Params) {
             </p>
           </div>
           <a
-            href={composition.gcsUrl}
+            href={downloadUrl}
             download
             className="flex items-center gap-2 px-3 py-2 bg-white text-neutral-950 rounded-md text-sm font-medium hover:bg-neutral-200 transition-colors"
           >
@@ -50,7 +56,7 @@ export default async function CompositionPage({ params }: Params) {
 
         <div className="flex-1 flex items-center justify-center p-8">
           <img
-            src={composition.gcsUrl}
+            src={displayUrl}
             alt={composition.headlineText}
             className="max-h-[80vh] max-w-full object-contain rounded-lg shadow-2xl"
           />

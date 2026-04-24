@@ -17,11 +17,10 @@ export async function uploadImage(
   buffer: Buffer,
   path: string,
   contentType: string
-): Promise<string> {
+): Promise<void> {
   const bucket = getBucket();
   const file = bucket.file(path);
   await file.save(buffer, { contentType, resumable: false });
-  return `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME}/${path}`;
 }
 
 export async function getSignedUrl(path: string, ttlSeconds: number): Promise<string> {

@@ -48,7 +48,9 @@ export async function POST(request: Request) {
   const buffer = Buffer.from(arrayBuffer);
   const ext = file.name.split(".").pop() ?? "jpg";
   const gcsPath = `reference-images/${user.id}/${Date.now()}.${ext}`;
-  const gcsUrl = await uploadImage(buffer, gcsPath, file.type || "image/jpeg");
+  await uploadImage(buffer, gcsPath, file.type || "image/jpeg");
+  // Phase A temporary: public URL stored until Phase B removes gcsUrl column
+  const gcsUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME!}/${gcsPath}`;
 
   const image = await prisma.referenceImage.create({
     data: {

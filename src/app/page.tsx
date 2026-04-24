@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth/edge";
 import { prisma } from "@/lib/db";
+import { getSignedUrl } from "@/lib/storage/gcs";
 import { AppShell } from "@/components/layout/app-shell";
 import { Plus } from "lucide-react";
 
@@ -24,10 +25,18 @@ export default async function GalleryPage() {
         where: { status: "READY" },
         orderBy: { createdAt: "desc" },
         take: 1,
-        select: { gcsUrl: true, id: true },
+        select: { gcsPath: true, id: true },
       },
     },
   });
+
+  const briefsWithThumbs = await Promise.all(
+    briefs.map(async (brief) => {
+      const thumbPath = brief.scenes[0]?.gcsPath ?? null;
+      const thumbUrl = thumbPath ? await getSignedUrl(thumbPath, 3600) : null;
+      return { ...brief, thumbUrl };
+    })
+  );
 
   return (
     <AppShell user={session.user}>
@@ -55,8 +64,8 @@ export default async function GalleryPage() {
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-4">
-            {briefs.map((brief) => {
-              const thumb = brief.scenes[0]?.gcsUrl;
+            {briefsWithThumbs.map((brief) => {
+              const thumb = brief.thumbUrl;
               return (
                 <Link
                   key={brief.id}
